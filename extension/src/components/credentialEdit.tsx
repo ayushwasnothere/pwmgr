@@ -1,14 +1,21 @@
 import { useEffect, useState } from "react";
+import { base64ToCryptoKey, encryptData } from "../utils/encryption";
+import { getKeyAndTokenFromStorage } from "../utils/authStore";
 
 export const CredentialEdit = ({
   oldCredential,
+  setShow,
+  showToast,
 }: {
   oldCredential?: {
     tag: string;
     username: string;
     password: string;
     url: string;
+    id: number;
   };
+  setShow: (show: boolean) => void;
+  showToast: (message: string, type?: "success" | "error") => void;
 }) => {
   const [tag, setTag] = useState(oldCredential?.tag || "");
   const [username, setUsername] = useState(oldCredential?.username || "");
@@ -93,7 +100,77 @@ export const CredentialEdit = ({
         </div>
       </div>
       <div className="flex h-16 bg-white/10 p-4 py-3 justify-between items-center">
-        <div className="bg-purple-500 hover:bg-purple-500/70 font-bold text-white rounded-full px-4 py-2 flex justify-center items-center">
+        <div
+          className="bg-purple-500 hover:bg-purple-500/70 font-bold text-white rounded-full px-4 py-2 flex justify-center items-center"
+          onClick={async () => {
+            const data = await getKeyAndTokenFromStorage();
+            if (!data) {
+              console.error("Failed to get key and token from storage");
+              return;
+            }
+            const { key: stringKey, token } = data;
+
+            if (!stringKey) {
+              console.error("Encryption key is null");
+              return;
+            }
+
+            const key = await base64ToCryptoKey(stringKey);
+
+            if (!key) {
+              console.error("Failed to convert key");
+              return;
+            }
+
+            const { iv, encryptedUsername, encryptedPassword } =
+              await encryptData(username, password, key as CryptoKey);
+
+            let res;
+
+            if (oldCredential) {
+              res = await fetch(
+                `${import.meta.env.VITE_API_URL}/creds/${oldCredential.id}`,
+                {
+                  body: JSON.stringify({
+                    tag,
+                    username: encryptedUsername,
+                    password: encryptedPassword,
+                    url,
+                    iv,
+                  }),
+                  method: "PUT",
+                  headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                    Accept: "application/json",
+                  },
+                },
+              );
+            } else {
+              res = await fetch(`${import.meta.env.VITE_API_URL}/creds`, {
+                body: JSON.stringify({
+                  tag,
+                  username: encryptedUsername,
+                  password: encryptedPassword,
+                  url,
+                  iv,
+                }),
+                method: "POST",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  "Content-Type": "application/json",
+                  Accept: "application/json",
+                },
+              });
+            }
+            if (res.status !== 200) {
+              console.log("Error saving credential");
+              return;
+            }
+            showToast("Credential saved", "success");
+            setShow(false);
+          }}
+        >
           Save
         </div>
       </div>

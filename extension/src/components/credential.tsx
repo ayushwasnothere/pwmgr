@@ -4,13 +4,17 @@ import {
 } from "@heroicons/react/24/outline";
 import { ClipboardDocumentIcon } from "@heroicons/react/24/solid";
 import { copyToClipboard } from "../utils/copyToClipboard";
+import { getKeyAndTokenFromStorage } from "../utils/authStore";
 
 interface CredentialProps {
   tag?: string;
   username?: string;
   password?: string;
+  id?: number;
   url?: string;
   onEdit?: () => void;
+  setShow?: (show: boolean) => void;
+  showToast: (message: string, type?: "success" | "error") => void;
 }
 
 export const Credential = ({
@@ -18,7 +22,10 @@ export const Credential = ({
   username,
   password,
   url,
+  id,
   onEdit,
+  setShow,
+  showToast,
 }: CredentialProps) => {
   return (
     <div className="w-full flex flex-col justify-between">
@@ -41,6 +48,7 @@ export const Credential = ({
                   className="h-5 w-5 mr-2 text-white cursor-pointer hover:text-purple-500"
                   onClick={() => {
                     if (username) {
+                      showToast("Username copied", "success");
                       copyToClipboard(username);
                     }
                   }}
@@ -54,6 +62,7 @@ export const Credential = ({
                 className="h-5 w-5 mr-2 text-white cursor-pointer hover:text-purple-500"
                 onClick={() => {
                   if (password) {
+                    showToast("Password copied", "success");
                     copyToClipboard(password);
                   }
                 }}
@@ -68,11 +77,17 @@ export const Credential = ({
             <div className="flex justify-between items-center">
               <div className="select-text">{url || ""}</div>
               <div className="flex gap-2">
-                <ArrowTopRightOnSquareIcon className="h-5 w-5 mr-2 text-white cursor-pointer hover:text-purple-500" />
+                <ArrowTopRightOnSquareIcon
+                  className="h-5 w-5 mr-2 text-white cursor-pointer hover:text-purple-500"
+                  onClick={() => {
+                    chrome.tabs.create({ url });
+                  }}
+                />
                 <ClipboardDocumentIcon
                   className="h-5 w-5 mr-2 text-white cursor-pointer hover:text-purple-500"
                   onClick={() => {
                     if (url) {
+                      showToast("URL copied", "success");
                       copyToClipboard(url);
                     }
                   }}
@@ -89,7 +104,40 @@ export const Credential = ({
         >
           Edit
         </div>
-        <TrashIcon className="h-5 w-5 mr-2 text-red-500 cursor-pointer hover:scale-125" />
+        <TrashIcon
+          className="h-5 w-5 mr-2 text-red-500 cursor-pointer hover:scale-125"
+          onClick={async () => {
+            const data = await getKeyAndTokenFromStorage();
+            if (!data) {
+              console.error("Failed to get key and token from storage");
+              return;
+            }
+            const { token } = data;
+            if (!token) {
+              console.error("Encryption token is null");
+              return;
+            }
+            const res = await fetch(
+              `${import.meta.env.VITE_API_URL}/creds/${id}`,
+              {
+                method: "DELETE",
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  "Content-Type": "application/json",
+                  Accept: "application/json",
+                },
+              },
+            );
+            if (res.status !== 200) {
+              console.error("Failed to delete credential");
+              return;
+            }
+            if (setShow) {
+              setShow(false);
+              showToast("Credential deleted", "success");
+            }
+          }}
+        />
       </div>
     </div>
   );

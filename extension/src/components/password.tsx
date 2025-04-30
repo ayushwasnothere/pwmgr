@@ -6,13 +6,15 @@ interface Password {
   username?: string;
   password?: string;
   url?: string;
-  note?: string;
+  id?: number;
 }
 
 export const Password = ({
   password,
   onClick,
+  showToast,
 }: {
+  showToast: (message: string, type?: "success" | "error") => void;
   password: Password;
   onClick: () => void;
 }) => {
@@ -32,6 +34,7 @@ export const Password = ({
           className="h-5 w-5 text-white cursor-pointer hover:text-purple-500"
           onClick={() => {
             copyToClipboard(String(password.password));
+            showToast("Password copied", "success");
           }}
         />
       </div>

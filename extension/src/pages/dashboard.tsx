@@ -1,4 +1,7 @@
-import { LockClosedIcon as LockOutline } from "@heroicons/react/24/outline";
+import {
+  ArrowLeftStartOnRectangleIcon,
+  LockClosedIcon as LockOutline,
+} from "@heroicons/react/24/outline";
 import { LockClosedIcon as LockSolid } from "@heroicons/react/24/solid";
 import { ArrowPathIcon as GenerateOutline } from "@heroicons/react/24/outline";
 import { ArrowPathIcon as GenerateSolid } from "@heroicons/react/24/solid";
@@ -6,14 +9,32 @@ import { useState } from "react";
 import { Generator } from "../components/generator";
 import Vault from "../components/vault";
 
-export default function Dashboard() {
+export default function Dashboard({
+  showToast,
+  setIsAuthenticated,
+}: {
+  showToast: (message: string, type?: "success" | "error") => void;
+  setIsAuthenticated: (isAuthenticated: boolean) => void;
+}) {
   const [tab, setTab] = useState("vault");
   return (
     <div className="h-full w-full flex flex-col bg-black items-center justify-center">
       <div className="w-full h-20 bg-white/10 px-4 text-white flex items-center justify-between text-2xl font-bold">
         <div>{tab === "generate" ? "Generator" : "Passwords"}</div>
+        <ArrowLeftStartOnRectangleIcon
+          className="h-6 w-6 cursor-pointer text-red-500 mr-4 hover:scale-125 transition-all duration-200 ease-in-out"
+          onClick={() => {
+            chrome.storage.local.clear();
+            setIsAuthenticated(false);
+            showToast("Logged out", "success");
+          }}
+        />
       </div>
-      {tab === "generate" ? <Generator /> : <Vault />}
+      {tab === "generate" ? (
+        <Generator showToast={showToast} />
+      ) : (
+        <Vault showToast={showToast} />
+      )}
       <div className="w-full h-20 bg-white/10 flex">
         <div
           className="w-1/2 h-full flex justify-center items-center hover:bg-purple-500/20 cursor-pointer"

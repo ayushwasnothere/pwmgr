@@ -2,12 +2,18 @@ import { useState } from "react";
 import { BottomLabel } from "../components/bottomLabel";
 import { PurpleButton } from "../components/button";
 import { PasswordInput } from "../components/passwordInput";
+import { cryptoKeyToBase64, deriveKey } from "../utils/encryption";
 
 export default function SignUp({
   setDisplay,
+  setIsAuthenticated,
+  showToast,
 }: {
   setDisplay: (display: string) => void;
+  showToast: (message: string, type?: "success" | "error") => void;
+  setIsAuthenticated: (isAuthenticated: boolean) => void;
 }) {
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
@@ -17,6 +23,8 @@ export default function SignUp({
       <div className="w-full max-w-[400px]">
         <div className="text-xs text-white/60">Username</div>
         <input
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
           type="text"
           className="mt-1 p-3 py-4 w-full text-white rounded-lg bg-white/15 text-sm"
           placeholder="Enter username"
@@ -38,7 +46,43 @@ export default function SignUp({
           setPassword={setConfirmPassword}
         />
       </div>
-      <PurpleButton name="Create Account" onClick={() => {}} />
+      <PurpleButton
+        name="Create Account"
+        onClick={async () => {
+          if (password !== confirmPassword || !username) {
+            console.log("Passwords do not match or username is empty");
+            return;
+          }
+          const res = await fetch(
+            `${import.meta.env.VITE_API_URL}/user/signup`,
+            {
+              body: JSON.stringify({ username, password }),
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+              },
+            },
+          );
+          if (res.status !== 200) {
+            const data = await res.json();
+            showToast(data.message, "error");
+            console.log("Error signing up");
+            return;
+          }
+          const data = await res.json();
+          const derivedKey = await deriveKey(password, data.salt);
+          chrome.storage.local.set({
+            isLogged: true,
+            loginTime: Date.now(),
+            token: data.token,
+            key: await cryptoKeyToBase64(derivedKey),
+          });
+
+          setIsAuthenticated(true);
+          showToast("Account created", "success");
+        }}
+      />
       <BottomLabel
         label="Already have an account?"
         clickable="Login"

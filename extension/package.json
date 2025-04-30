@@ -13,6 +13,7 @@
     "@heroicons/react": "^2.2.0",
     "@tailwindcss/vite": "^4.1.4",
     "@types/chrome": "^0.0.315",
+    "bcryptjs": "^3.0.2",
     "generate-password-ts": "^1.6.5",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",

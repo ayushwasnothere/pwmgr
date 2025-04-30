@@ -4,7 +4,11 @@ import { ClipboardDocumentIcon } from "@heroicons/react/24/solid";
 import { generatePassword } from "../utils/passwordGenerator";
 import { copyToClipboard } from "../utils/copyToClipboard";
 
-export const Generator = () => {
+export const Generator = ({
+  showToast,
+}: {
+  showToast: (message: string, type?: "success" | "error") => void;
+}) => {
   const [passLength, setPassLength] = useState(14);
   const [upper, setUpper] = useState(true);
   const [lower, setLower] = useState(true);
@@ -40,6 +44,7 @@ export const Generator = () => {
             className="h-5 w-5 text-white cursor-pointer hover:text-purple-500"
             onClick={() => {
               copyToClipboard(password);
+              showToast("Password copied", "success");
             }}
           />
         </div>
