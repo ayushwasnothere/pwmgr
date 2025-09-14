@@ -46,6 +46,9 @@ export default function SignUp({
           setPassword={setConfirmPassword}
         />
       </div>
+      <div className="text-xs text-white/60 px-0.5">
+        This is the master password. It cannot be recovered again if forgotten.
+      </div>
       <PurpleButton
         name="Create Account"
         onClick={async () => {
